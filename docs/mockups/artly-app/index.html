@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artly — Discover Your Taste in Art</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    /* ─── Hero ─── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: var(--space-16) var(--space-8) var(--space-12);
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .hero-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.35;
+      filter: brightness(0.6) saturate(0.8);
+    }
+
+    .hero-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(10, 10, 10, 0.3) 0%,
+        rgba(10, 10, 10, 0.5) 40%,
+        rgba(10, 10, 10, 0.85) 70%,
+        var(--color-bg) 100%
+      );
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: var(--z-base);
+      max-width: 900px;
+    }
+
+    .hero-label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-6);
+    }
+
+    .hero-label-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: var(--radius-full);
+      background: var(--color-terracotta);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    .hero-title {
+      margin-bottom: var(--space-6);
+    }
+
+    .hero-title em {
+      font-style: italic;
+      color: var(--color-terracotta-light);
+    }
+
+    .hero-subtitle {
+      max-width: 540px;
+      margin-bottom: var(--space-10);
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .hero-scroll {
+      position: absolute;
+      bottom: var(--space-8);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-2);
+      color: var(--color-ivory-dim);
+      font-size: var(--text-xs);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .hero-scroll-line {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(180deg, var(--color-ivory-dim), transparent);
+    }
+
+    /* ─── How It Works ─── */
+    .section {
+      padding: var(--space-24) var(--space-8);
+    }
+
+    .section-header {
+      margin-bottom: var(--space-16);
+    }
+
+    .section-header .divider-accent {
+      margin-bottom: var(--space-4);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-1);
+    }
+
+    .step {
+      padding: var(--space-10) var(--space-8);
+      border: var(--border-subtle);
+      position: relative;
+      transition: all var(--duration-slow) var(--ease-out);
+    }
+
+    .step:first-child {
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    }
+
+    .step:last-child {
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    }
+
+    .step:hover {
+      background: var(--color-bg-elevated);
+      border-color: rgba(245, 240, 232, 0.12);
+    }
+
+    .step-number {
+      font-family: var(--font-display);
+      font-size: var(--text-6xl);
+      line-height: 1;
+      color: rgba(196, 101, 74, 0.12);
+      margin-bottom: var(--space-6);
+    }
+
+    .step-title {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      margin-bottom: var(--space-3);
+    }
+
+    .step-desc {
+      color: var(--color-ivory-dim);
+      font-size: var(--text-sm);
+      line-height: 1.7;
+      max-width: 280px;
+    }
+
+    /* ─── Preview Section ─── */
+    .preview {
+      padding: var(--space-24) var(--space-8);
+      position: relative;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-4);
+      max-width: var(--container-full);
+      margin: 0 auto;
+    }
+
+    .preview-card {
+      position: relative;
+      aspect-ratio: 3/4;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all var(--duration-slow) var(--ease-out);
+    }
+
+    .preview-card:nth-child(2) {
+      transform: translateY(var(--space-12));
+    }
+
+    .preview-card:nth-child(4) {
+      transform: translateY(var(--space-8));
+    }
+
+    .preview-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform var(--duration-slow) var(--ease-out);
+    }
+
+    .preview-card:hover {
+      transform: translateY(calc(-1 * var(--space-2)));
+      box-shadow: var(--shadow-xl);
+    }
+
+    .preview-card:nth-child(2):hover {
+      transform: translateY(calc(var(--space-12) - var(--space-2)));
+    }
+
+    .preview-card:nth-child(4):hover {
+      transform: translateY(calc(var(--space-8) - var(--space-2)));
+    }
+
+    .preview-card:hover img {
+      transform: scale(1.05);
+    }
+
+    .preview-card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 50%, rgba(10,10,10,0.8) 100%);
+      opacity: 0;
+      transition: opacity var(--duration-normal) var(--ease-out);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: var(--space-6);
+    }
+
+    .preview-card:hover .preview-card-overlay {
+      opacity: 1;
+    }
+
+    .preview-card-title {
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      margin-bottom: var(--space-1);
+    }
+
+    .preview-card-artist {
+      font-size: var(--text-xs);
+      color: var(--color-ivory-dim);
+    }
+
+    /* ─── Taste Map Preview ─── */
+    .map-preview {
+      padding: var(--space-24) var(--space-8);
+      text-align: center;
+    }
+
+    .map-visual {
+      max-width: 600px;
+      margin: var(--space-12) auto 0;
+      position: relative;
+    }
+
+    .map-ring {
+      width: 400px;
+      height: 400px;
+      margin: 0 auto;
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(245, 240, 232, 0.06);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .map-ring-inner {
+      width: 260px;
+      height: 260px;
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(245, 240, 232, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .map-ring-core {
+      width: 120px;
+      height: 120px;
+      border-radius: var(--radius-full);
+      background: radial-gradient(circle, rgba(196, 101, 74, 0.3), transparent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    .map-ring-core-text {
+      font-family: var(--font-display);
+      font-size: var(--text-3xl);
+      font-style: italic;
+      color: var(--color-terracotta-light);
+    }
+
+    .map-node {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .map-node-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: var(--radius-full);
+      background: var(--color-terracotta);
+      box-shadow: 0 0 12px rgba(196, 101, 74, 0.4);
+    }
+
+    .map-node-label {
+      font-size: var(--text-xs);
+      color: var(--color-ivory-dim);
+      white-space: nowrap;
+    }
+
+    .map-node-value {
+      font-family: var(--font-display);
+      font-size: var(--text-sm);
+      color: var(--color-ivory-muted);
+    }
+
+    .map-node:nth-child(1) { top: -10px; left: 50%; transform: translateX(-50%); }
+    .map-node:nth-child(2) { top: 25%; right: -40px; }
+    .map-node:nth-child(3) { bottom: 25%; right: -20px; }
+    .map-node:nth-child(4) { bottom: -10px; left: 50%; transform: translateX(-50%); }
+    .map-node:nth-child(5) { bottom: 25%; left: -20px; }
+    .map-node:nth-child(6) { top: 25%; left: -40px; }
+
+    /* ─── CTA ─── */
+    .cta {
+      padding: var(--space-32) var(--space-8);
+      text-align: center;
+      position: relative;
+    }
+
+    .cta::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(196, 101, 74, 0.06), transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-title {
+      margin-bottom: var(--space-6);
+    }
+
+    .cta-title em {
+      font-style: italic;
+      color: var(--color-terracotta-light);
+    }
+
+    /* ─── Footer ─── */
+    .footer {
+      padding: var(--space-8);
+      border-top: var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-text {
+      font-size: var(--text-xs);
+      color: var(--color-ivory-dim);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: var(--space-6);
+    }
+
+    .footer-link {
+      font-size: var(--text-xs);
+      color: var(--color-ivory-dim);
+      transition: color var(--duration-fast);
+    }
+
+    .footer-link:hover {
+      color: var(--color-ivory);
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 1024px) {
+      .steps-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      .step:first-child {
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      }
+
+      .step:last-child {
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      }
+
+      .preview-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .preview-card:nth-child(2),
+      .preview-card:nth-child(4) {
+        transform: none;
+      }
+
+      .preview-card:nth-child(2):hover,
+      .preview-card:nth-child(4):hover {
+        transform: translateY(calc(-1 * var(--space-2)));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero {
+        padding: var(--space-12) var(--space-5) var(--space-8);
+      }
+
+      .preview-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-3);
+      }
+
+      .map-ring {
+        width: 280px;
+        height: 280px;
+      }
+
+      .map-ring-inner {
+        width: 180px;
+        height: 180px;
+      }
+
+      .map-ring-core {
+        width: 80px;
+        height: 80px;
+      }
+
+      .footer {
+        flex-direction: column;
+        gap: var(--space-4);
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="index.html" class="nav-logo"><em>Artly</em></a>
+    <ul class="nav-links">
+      <li><a href="swipe.html" class="nav-link">Discover</a></li>
+      <li><a href="map.html" class="nav-link">Taste Map</a></li>
+      <li><a href="collection.html" class="nav-link">Collection</a></li>
+      <li><a href="profile.html" class="nav-link">Profile</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-bg">
+      <img src="https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=1920&q=80" alt="Abstract art gallery" loading="eager">
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-label animate-fade-in-up">
+        <span class="hero-label-dot"></span>
+        <span class="text-label">Art Discovery Reimagined</span>
+      </div>
+
+      <h1 class="heading-hero hero-title animate-fade-in-up delay-1">
+        What does art<br>say about <em>you</em>?
+      </h1>
+
+      <p class="text-body-lg hero-subtitle animate-fade-in-up delay-2">
+        Swipe through masterpieces from the world's greatest museums.
+        Build your aesthetic identity. Discover what moves you —
+        instinctively, playfully, authentically.
+      </p>
+
+      <div class="hero-actions animate-fade-in-up delay-3">
+        <a href="swipe.html" class="btn btn-primary btn-lg">Start Discovering</a>
+        <a href="#how-it-works" class="btn btn-secondary btn-lg">How It Works</a>
+      </div>
+    </div>
+
+    <div class="hero-scroll animate-fade-in delay-6">
+      <span>Scroll</span>
+      <div class="hero-scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section" id="how-it-works">
+    <div class="container">
+      <div class="section-header animate-fade-in-up">
+        <div class="divider-accent"></div>
+        <p class="text-label" style="margin-top: var(--space-4);">The Experience</p>
+        <h2 class="heading-2" style="margin-top: var(--space-3);">Three steps to knowing yourself</h2>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step animate-fade-in-up delay-1">
+          <div class="step-number">01</div>
+          <h3 class="step-title">Swipe</h3>
+          <p class="step-desc">
+            Encounter artworks from the Met, Rijksmuseum, and Art Institute of Chicago.
+            React instinctively — like, save, explore, or skip.
+          </p>
+        </div>
+
+        <div class="step animate-fade-in-up delay-2">
+          <div class="step-number">02</div>
+          <h3 class="step-title">Discover</h3>
+          <p class="step-desc">
+            After 50 swipes, your taste map emerges. See which eras, styles,
+            and palettes speak to you — broken down into living percentages.
+          </p>
+        </div>
+
+        <div class="step animate-fade-in-up delay-3">
+          <div class="step-number">03</div>
+          <h3 class="step-title">Share</h3>
+          <p class="step-desc">
+            Your aesthetic identity is uniquely yours. Share your taste map
+            with friends, save your favorites, and keep discovering.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Artwork Preview -->
+  <section class="preview">
+    <div class="container">
+      <div class="section-header animate-fade-in-up" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+        <div class="divider-accent"></div>
+        <p class="text-label" style="margin-top: var(--space-4);">From the Collection</p>
+        <h2 class="heading-2" style="margin-top: var(--space-3);">Masterpieces await</h2>
+        <p class="text-body" style="margin-top: var(--space-4); max-width: 480px;">
+          Real artworks from world-renowned museums, curated for discovery.
+        </p>
+      </div>
+    </div>
+
+    <div class="preview-grid" style="padding: 0 var(--space-8); max-width: var(--container-full); margin: 0 auto;">
+      <div class="preview-card animate-fade-in-up delay-1">
+        <img src="https://images.unsplash.com/photo-1578321272176-b7bbc0679853?w=600&q=80" alt="Classical painting">
+        <div class="preview-card-overlay">
+          <span class="preview-card-title">The Starry Night</span>
+          <span class="preview-card-artist">Vincent van Gogh, 1889</span>
+        </div>
+      </div>
+
+      <div class="preview-card animate-fade-in-up delay-2">
+        <img src="https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=600&q=80" alt="Impressionist painting">
+        <div class="preview-card-overlay">
+          <span class="preview-card-title">Water Lilies</span>
+          <span class="preview-card-artist">Claude Monet, 1906</span>
+        </div>
+      </div>
+
+      <div class="preview-card animate-fade-in-up delay-3">
+        <img src="https://images.unsplash.com/photo-1578301978018-3005759f48f7?w=600&q=80" alt="Abstract art">
+        <div class="preview-card-overlay">
+          <span class="preview-card-title">The Great Wave</span>
+          <span class="preview-card-artist">Katsushika Hokusai, 1831</span>
+        </div>
+      </div>
+
+      <div class="preview-card animate-fade-in-up delay-4">
+        <img src="https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=600&q=80" alt="Modern art">
+        <div class="preview-card-overlay">
+          <span class="preview-card-title">Girl with a Pearl Earring</span>
+          <span class="preview-card-artist">Johannes Vermeer, 1665</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Taste Map Preview -->
+  <section class="map-preview">
+    <div class="container">
+      <div class="section-header animate-fade-in-up" style="display: flex; flex-direction: column; align-items: center;">
+        <div class="divider-accent"></div>
+        <p class="text-label" style="margin-top: var(--space-4);">Your Aesthetic Identity</p>
+        <h2 class="heading-2" style="margin-top: var(--space-3);">A map that's uniquely <em class="text-italic">yours</em></h2>
+        <p class="text-body" style="margin-top: var(--space-4); max-width: 480px;">
+          Every swipe shapes your taste map — a living visualization of what moves you in art.
+        </p>
+      </div>
+
+      <div class="map-visual animate-scale-in delay-2">
+        <div class="map-ring">
+          <div class="map-node">
+            <div class="map-node-dot"></div>
+            <span class="map-node-label">Renaissance</span>
+            <span class="map-node-value">34%</span>
+          </div>
+          <div class="map-node">
+            <div class="map-node-dot" style="background: var(--color-gold);"></div>
+            <span class="map-node-label">Baroque</span>
+            <span class="map-node-value">22%</span>
+          </div>
+          <div class="map-node">
+            <div class="map-node-dot" style="background: var(--color-sage);"></div>
+            <span class="map-node-label">Impressionism</span>
+            <span class="map-node-value">18%</span>
+          </div>
+          <div class="map-node">
+            <div class="map-node-dot" style="background: var(--color-rose);"></div>
+            <span class="map-node-label">Modern</span>
+            <span class="map-node-value">14%</span>
+          </div>
+          <div class="map-node">
+            <div class="map-node-dot" style="background: var(--color-ivory-dim);"></div>
+            <span class="map-node-label">Abstract</span>
+            <span class="map-node-value">8%</span>
+          </div>
+          <div class="map-node">
+            <div class="map-node-dot" style="background: var(--color-terracotta-light);"></div>
+            <span class="map-node-label">Contemporary</span>
+            <span class="map-node-value">4%</span>
+          </div>
+
+          <div class="map-ring-inner">
+            <div class="map-ring-core">
+              <span class="map-ring-core-text">You</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="container" style="position: relative; z-index: 1;">
+      <h2 class="heading-hero cta-title animate-fade-in-up">
+        Ready to meet your<br><em>taste</em>?
+      </h2>
+      <p class="text-body-lg animate-fade-in-up delay-1" style="max-width: 480px; margin: 0 auto var(--space-8);">
+        No expertise required. Just instinct.
+      </p>
+      <a href="swipe.html" class="btn btn-primary btn-lg animate-fade-in-up delay-2">
+        Start Swiping
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <span class="footer-text">Artly &copy; 2026</span>
+    <div class="footer-links">
+      <a href="#" class="footer-link">About</a>
+      <a href="#" class="footer-link">Museums</a>
+      <a href="#" class="footer-link">Privacy</a>
+    </div>
+  </footer>
+
+  <script>
+    // Intersection Observer for scroll-triggered animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.animationPlayState = 'running';
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+    document.querySelectorAll('.animate-fade-in-up, .animate-scale-in, .animate-fade-in').forEach(el => {
+      el.style.animationPlayState = 'paused';
+      observer.observe(el);
+    });
+
+    // Hero animations play immediately
+    document.querySelectorAll('.hero .animate-fade-in-up').forEach(el => {
+      el.style.animationPlayState = 'running';
+    });
+  </script>
+</body>
+</html>

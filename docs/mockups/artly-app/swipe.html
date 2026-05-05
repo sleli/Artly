@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Artly — Discover</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    body {
+      overflow: hidden;
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    /* ─── Layout ─── */
+    .swipe-app {
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ─── Top Bar ─── */
+    .swipe-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: var(--z-nav);
+      padding: var(--space-5) var(--space-6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(10,10,10,0.8) 0%, transparent 100%);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .swipe-top-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .swipe-counter {
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      color: var(--color-ivory-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .swipe-counter span {
+      color: var(--color-ivory);
+      font-weight: 600;
+    }
+
+    .swipe-progress-wrap {
+      flex: 1;
+      max-width: 200px;
+      margin: 0 var(--space-4);
+    }
+
+    .swipe-progress-label {
+      font-size: 11px;
+      color: var(--color-ivory-dim);
+      margin-bottom: var(--space-1);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .swipe-progress-label span:last-child {
+      color: var(--color-terracotta-light);
+    }
+
+    /* ─── Card Stack ─── */
+    .card-stack {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-20) var(--space-6) var(--space-6);
+      overflow: hidden;
+    }
+
+    .art-card {
+      position: absolute;
+      width: calc(100% - var(--space-12));
+      max-width: 440px;
+      aspect-ratio: 3/4;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: transform 0.1s ease, box-shadow 0.3s ease;
+      will-change: transform;
+    }
+
+    .art-card:active {
+      cursor: grabbing;
+    }
+
+    .art-card.behind {
+      transform: scale(0.95) translateY(12px);
+      filter: brightness(0.7);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .art-card.current {
+      z-index: 10;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .art-card-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    .art-card-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        transparent 40%,
+        rgba(10,10,10,0.6) 70%,
+        rgba(10,10,10,0.95) 100%
+      );
+    }
+
+    .art-card-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: var(--space-6);
+    }
+
+    .art-card-era {
+      display: inline-block;
+      margin-bottom: var(--space-2);
+    }
+
+    .art-card-title {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      line-height: 1.2;
+      margin-bottom: var(--space-1);
+    }
+
+    .art-card-artist {
+      font-size: var(--text-sm);
+      color: var(--color-ivory-muted);
+      margin-bottom: var(--space-1);
+    }
+
+    .art-card-museum {
+      font-size: var(--text-xs);
+      color: var(--color-ivory-dim);
+    }
+
+    /* Swipe indicators */
+    .swipe-indicator {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--font-display);
+      font-size: var(--text-4xl);
+      font-style: italic;
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-lg);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .swipe-indicator.like {
+      right: var(--space-6);
+      color: var(--color-sage);
+      border: 2px solid var(--color-sage);
+      transform: translateY(-50%) rotate(12deg);
+    }
+
+    .swipe-indicator.nope {
+      left: var(--space-6);
+      color: var(--color-rose);
+      border: 2px solid var(--color-rose);
+      transform: translateY(-50%) rotate(-12deg);
+    }
+
+    /* ─── Action Buttons ─── */
+    .swipe-actions {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: var(--z-nav);
+      padding: var(--space-6) var(--space-8) var(--space-10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-4);
+      background: linear-gradient(0deg, rgba(10,10,10,0.9) 0%, transparent 100%);
+    }
+
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-1);
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .action-btn-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: var(--border-visible);
+      background: var(--color-bg-card);
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+
+    .action-btn:hover .action-btn-circle {
+      box-shadow: var(--shadow-md);
+    }
+
+    .action-btn-circle svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .action-btn-label {
+      font-size: 10px;
+      color: var(--color-ivory-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* Skip button */
+    .action-btn-skip .action-btn-circle {
+      border-color: rgba(120, 114, 106, 0.3);
+    }
+
+    .action-btn-skip .action-btn-circle svg {
+      color: var(--color-ivory-dim);
+    }
+
+    .action-btn-skip:hover .action-btn-circle {
+      border-color: rgba(120, 114, 106, 0.5);
+      background: rgba(120, 114, 106, 0.1);
+    }
+
+    /* Explore button */
+    .action-btn-explore .action-btn-circle {
+      border-color: rgba(201, 169, 78, 0.3);
+    }
+
+    .action-btn-explore .action-btn-circle svg {
+      color: var(--color-gold);
+    }
+
+    .action-btn-explore:hover .action-btn-circle {
+      border-color: var(--color-gold);
+      background: rgba(201, 169, 78, 0.1);
+      box-shadow: 0 0 20px rgba(201, 169, 78, 0.15);
+    }
+
+    /* Save button */
+    .action-btn-save .action-btn-circle {
+      border-color: rgba(107, 143, 113, 0.3);
+    }
+
+    .action-btn-save .action-btn-circle svg {
+      color: var(--color-sage);
+    }
+
+    .action-btn-save:hover .action-btn-circle {
+      border-color: var(--color-sage);
+      background: rgba(107, 143, 113, 0.1);
+      box-shadow: 0 0 20px rgba(107, 143, 113, 0.15);
+    }
+
+    /* Like button */
+    .action-btn-like .action-btn-circle {
+      width: 64px;
+      height: 64px;
+      border-color: rgba(196, 101, 74, 0.3);
+      background: rgba(196, 101, 74, 0.08);
+    }
+
+    .action-btn-like .action-btn-circle svg {
+      color: var(--color-terracotta);
+      width: 26px;
+      height: 26px;
+    }
+
+    .action-btn-like:hover .action-btn-circle {
+      border-color: var(--color-terracotta);
+      background: rgba(196, 101, 74, 0.15);
+      box-shadow: 0 0 24px rgba(196, 101, 74, 0.2);
+      transform: scale(1.05);
+    }
+
+    /* ─── Card Fly Animation ─── */
+    .art-card.fly-left {
+      transition: transform 0.4s var(--ease-in-out), opacity 0.4s ease;
+      transform: translateX(-150%) rotate(-20deg) !important;
+      opacity: 0;
+    }
+
+    .art-card.fly-right {
+      transition: transform 0.4s var(--ease-in-out), opacity 0.4s ease;
+      transform: translateX(150%) rotate(20deg) !important;
+      opacity: 0;
+    }
+
+    .art-card.fly-up {
+      transition: transform 0.4s var(--ease-in-out), opacity 0.4s ease;
+      transform: translateY(-150%) scale(0.8) !important;
+      opacity: 0;
+    }
+
+    /* ─── Completion State ─── */
+    .swipe-complete {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: var(--z-overlay);
+      background: var(--color-bg);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: var(--space-8);
+    }
+
+    .swipe-complete.show {
+      display: flex;
+    }
+
+    .swipe-complete-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-full);
+      background: radial-gradient(circle, rgba(196, 101, 74, 0.2), transparent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--space-8);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    .swipe-complete-icon svg {
+      width: 32px;
+      height: 32px;
+      color: var(--color-terracotta);
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 480px) {
+      .art-card {
+        width: calc(100% - var(--space-8));
+      }
+
+      .swipe-actions {
+        padding: var(--space-4) var(--space-5) var(--space-8);
+        gap: var(--space-3);
+      }
+
+      .action-btn-circle {
+        width: 48px;
+        height: 48px;
+      }
+
+      .action-btn-like .action-btn-circle {
+        width: 56px;
+        height: 56px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <div class="swipe-app">
+    <!-- Top Bar -->
+    <div class="swipe-top">
+      <div class="swipe-top-left">
+        <a href="index.html" class="nav-logo" style="font-size: var(--text-xl);"><em>Artly</em></a>
+        <span class="swipe-counter"><span id="swipeCount">12</span> / 50</span>
+      </div>
+      <div class="swipe-progress-wrap">
+        <div class="swipe-progress-label">
+          <span>To taste map</span>
+          <span id="progressPercent">24%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-bar-fill" id="progressBar" style="width: 24%"></div>
+        </div>
+      </div>
+      <div style="display: flex; gap: var(--space-3);">
+        <a href="collection.html" class="btn-icon" title="Collection">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+          </svg>
+        </a>
+        <a href="profile.html" class="btn-icon" title="Profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Card Stack -->
+    <div class="card-stack" id="cardStack">
+      <!-- Cards are rendered by JS -->
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="swipe-actions">
+      <button class="action-btn action-btn-skip" onclick="swipeCard('left')" title="Skip">
+        <div class="action-btn-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </div>
+        <span class="action-btn-label">Skip</span>
+      </button>
+
+      <button class="action-btn action-btn-explore" onclick="swipeCard('up')" title="Explore">
+        <div class="action-btn-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+        </div>
+        <span class="action-btn-label">Explore</span>
+      </button>
+
+      <button class="action-btn action-btn-save" onclick="saveArtwork()" title="Save">
+        <div class="action-btn-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+          </svg>
+        </div>
+        <span class="action-btn-label">Save</span>
+      </button>
+
+      <button class="action-btn action-btn-like" onclick="swipeCard('right')" title="Like">
+        <div class="action-btn-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+          </svg>
+        </div>
+        <span class="action-btn-label">Like</span>
+      </button>
+    </div>
+
+    <!-- Completion State -->
+    <div class="swipe-complete" id="swipeComplete">
+      <div class="swipe-complete-icon animate-scale-in">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <h2 class="heading-2 animate-fade-in-up delay-1" style="margin-bottom: var(--space-4);">Your taste map is ready</h2>
+      <p class="text-body animate-fade-in-up delay-2" style="max-width: 360px; margin-bottom: var(--space-8);">
+        You've swiped 50 artworks. Discover which eras, styles, and palettes define your aesthetic identity.
+      </p>
+      <a href="map.html" class="btn btn-primary btn-lg animate-fade-in-up delay-3">
+        View Your Map
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // ─── Artwork Data ───
+    const artworks = [
+      {
+        title: "The Starry Night",
+        artist: "Vincent van Gogh",
+        year: "1889",
+        era: "Post-Impressionism",
+        museum: "MoMA, New York",
+        image: "https://images.unsplash.com/photo-1578321272176-b7bbc0679853?w=800&q=80"
+      },
+      {
+        title: "Girl with a Pearl Earring",
+        artist: "Johannes Vermeer",
+        year: "1665",
+        era: "Dutch Golden Age",
+        museum: "Mauritshuis, The Hague",
+        image: "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=800&q=80"
+      },
+      {
+        title: "The Great Wave",
+        artist: "Katsushika Hokusai",
+        year: "1831",
+        era: "Japanese Ukiyo-e",
+        museum: "Metropolitan Museum of Art",
+        image: "https://images.unsplash.com/photo-1578301978018-3005759f48f7?w=800&q=80"
+      },
+      {
+        title: "Water Lilies",
+        artist: "Claude Monet",
+        year: "1906",
+        era: "Impressionism",
+        museum: "Art Institute of Chicago",
+        image: "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=800&q=80"
+      },
+      {
+        title: "The Birth of Venus",
+        artist: "Sandro Botticelli",
+        year: "1485",
+        era: "Renaissance",
+        museum: "Uffizi Gallery, Florence",
+        image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&q=80"
+      },
+      {
+        title: "The Persistence of Memory",
+        artist: "Salvador Dali",
+        year: "1931",
+        era: "Surrealism",
+        museum: "MoMA, New York",
+        image: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&q=80"
+      },
+      {
+        title: "Nighthawks",
+        artist: "Edward Hopper",
+        year: "1942",
+        era: "American Realism",
+        museum: "Art Institute of Chicago",
+        image: "https://images.unsplash.com/photo-1578926288207-a90a5366759d?w=800&q=80"
+      },
+      {
+        title: "The Kiss",
+        artist: "Gustav Klimt",
+        year: "1908",
+        era: "Art Nouveau",
+        museum: "Belvedere, Vienna",
+        image: "https://images.unsplash.com/photo-1577720643272-265f09367456?w=800&q=80"
+      }
+    ];
+
+    let currentIndex = 0;
+    let swipeCount = 12;
+    const totalSwipes = 50;
+
+    // ─── Render Cards ───
+    function renderCards() {
+      const stack = document.getElementById('cardStack');
+      stack.innerHTML = '';
+
+      if (currentIndex >= artworks.length) {
+        document.getElementById('swipeComplete').classList.add('show');
+        return;
+      }
+
+      // Behind card
+      if (currentIndex + 1 < artworks.length) {
+        const behind = createCard(artworks[currentIndex + 1], 'behind');
+        stack.appendChild(behind);
+      }
+
+      // Current card
+      const current = createCard(artworks[currentIndex], 'current');
+      stack.appendChild(current);
+      initDrag(current);
+    }
+
+    function createCard(artwork, position) {
+      const card = document.createElement('div');
+      card.className = `art-card ${position}`;
+      card.innerHTML = `
+        <img class="art-card-image" src="${artwork.image}" alt="${artwork.title}" loading="lazy">
+        <div class="art-card-gradient"></div>
+        <div class="art-card-info">
+          <span class="badge badge-accent art-card-era">${artwork.era}</span>
+          <h3 class="art-card-title">${artwork.title}</h3>
+          <p class="art-card-artist">${artwork.artist}, ${artwork.year}</p>
+          <p class="art-card-museum">${artwork.museum}</p>
+        </div>
+        <div class="swipe-indicator like">Like</div>
+        <div class="swipe-indicator nope">Skip</div>
+      `;
+      return card;
+    }
+
+    // ─── Drag Logic ───
+    function initDrag(card) {
+      let startX = 0, startY = 0, currentX = 0, currentY = 0;
+      let isDragging = false;
+
+      const onStart = (e) => {
+        isDragging = true;
+        const point = e.touches ? e.touches[0] : e;
+        startX = point.clientX;
+        startY = point.clientY;
+        card.style.transition = 'none';
+      };
+
+      const onMove = (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const point = e.touches ? e.touches[0] : e;
+        currentX = point.clientX - startX;
+        currentY = point.clientY - startY;
+
+        const rotate = currentX * 0.08;
+        card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotate}deg)`;
+
+        // Show indicators
+        const likeIndicator = card.querySelector('.swipe-indicator.like');
+        const nopeIndicator = card.querySelector('.swipe-indicator.nope');
+        const threshold = 60;
+
+        if (currentX > threshold) {
+          likeIndicator.style.opacity = Math.min((currentX - threshold) / 80, 1);
+          nopeIndicator.style.opacity = 0;
+        } else if (currentX < -threshold) {
+          nopeIndicator.style.opacity = Math.min((-currentX - threshold) / 80, 1);
+          likeIndicator.style.opacity = 0;
+        } else {
+          likeIndicator.style.opacity = 0;
+          nopeIndicator.style.opacity = 0;
+        }
+      };
+
+      const onEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        const threshold = 100;
+        if (currentX > threshold) {
+          flyAway('right');
+        } else if (currentX < -threshold) {
+          flyAway('left');
+        } else if (currentY < -threshold) {
+          flyAway('up');
+        } else {
+          card.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+          card.style.transform = 'translate(0, 0) rotate(0deg)';
+          card.querySelector('.swipe-indicator.like').style.opacity = 0;
+          card.querySelector('.swipe-indicator.nope').style.opacity = 0;
+        }
+      };
+
+      card.addEventListener('mousedown', onStart);
+      card.addEventListener('touchstart', onStart, { passive: true });
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('mouseup', onEnd);
+      document.addEventListener('touchend', onEnd);
+
+      card._cleanup = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('mouseup', onEnd);
+        document.removeEventListener('touchend', onEnd);
+      };
+    }
+
+    function flyAway(direction) {
+      const card = document.querySelector('.art-card.current');
+      if (!card) return;
+
+      card._cleanup?.();
+      card.classList.add(`fly-${direction}`);
+
+      setTimeout(() => {
+        currentIndex++;
+        swipeCount++;
+        updateProgress();
+        renderCards();
+      }, 400);
+    }
+
+    function swipeCard(direction) {
+      flyAway(direction);
+    }
+
+    function saveArtwork() {
+      const card = document.querySelector('.art-card.current');
+      if (!card) return;
+
+      // Visual feedback
+      const saveBtn = document.querySelector('.action-btn-save .action-btn-circle');
+      saveBtn.style.borderColor = 'var(--color-sage)';
+      saveBtn.style.background = 'rgba(107, 143, 113, 0.2)';
+      saveBtn.querySelector('svg').setAttribute('fill', 'var(--color-sage)');
+
+      setTimeout(() => {
+        saveBtn.style.borderColor = '';
+        saveBtn.style.background = '';
+        saveBtn.querySelector('svg').setAttribute('fill', 'none');
+        flyAway('right');
+      }, 300);
+    }
+
+    function updateProgress() {
+      const percent = Math.round((swipeCount / totalSwipes) * 100);
+      document.getElementById('swipeCount').textContent = swipeCount;
+      document.getElementById('progressPercent').textContent = `${percent}%`;
+      document.getElementById('progressBar').style.width = `${percent}%`;
+
+      if (swipeCount >= totalSwipes) {
+        document.getElementById('swipeComplete').classList.add('show');
+      }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') swipeCard('left');
+      if (e.key === 'ArrowRight') swipeCard('right');
+      if (e.key === 'ArrowUp') swipeCard('up');
+      if (e.key === 's') saveArtwork();
+    });
+
+    // Init
+    renderCards();
+  </script>
+</body>
+</html>

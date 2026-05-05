@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artly — Your Collection</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    /* ─── Layout ─── */
+    .collection-page {
+      min-height: 100vh;
+      padding-top: var(--space-24);
+      padding-bottom: var(--space-16);
+    }
+
+    /* ─── Header ─── */
+    .collection-header {
+      padding: 0 var(--space-8);
+      margin-bottom: var(--space-10);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .collection-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .collection-count {
+      font-size: var(--text-sm);
+      color: var(--color-ivory-dim);
+    }
+
+    .collection-count span {
+      color: var(--color-terracotta-light);
+      font-family: var(--font-display);
+    }
+
+    /* ─── Filters ─── */
+    .collection-filters {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: 0 var(--space-8);
+      margin-bottom: var(--space-8);
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .collection-filters::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-full);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all var(--duration-normal) var(--ease-out);
+      background: transparent;
+      color: var(--color-ivory-muted);
+      border: var(--border-subtle);
+    }
+
+    .filter-chip:hover {
+      background: rgba(245, 240, 232, 0.04);
+      border-color: rgba(245, 240, 232, 0.15);
+    }
+
+    .filter-chip.active {
+      background: rgba(196, 101, 74, 0.1);
+      border-color: rgba(196, 101, 74, 0.3);
+      color: var(--color-terracotta-light);
+    }
+
+    /* ─── Gallery Grid ─── */
+    .gallery {
+      padding: 0 var(--space-8);
+      columns: 3;
+      column-gap: var(--space-4);
+    }
+
+    .gallery-item {
+      break-inside: avoid;
+      margin-bottom: var(--space-4);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+
+    .gallery-item:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      display: block;
+      transition: transform var(--duration-slow) var(--ease-out);
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.03);
+    }
+
+    .gallery-item-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(10,10,10,0.85) 100%);
+      opacity: 0;
+      transition: opacity var(--duration-normal) var(--ease-out);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: var(--space-5);
+    }
+
+    .gallery-item:hover .gallery-item-overlay {
+      opacity: 1;
+    }
+
+    .gallery-item-title {
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      margin-bottom: var(--space-1);
+    }
+
+    .gallery-item-artist {
+      font-size: var(--text-xs);
+      color: var(--color-ivory-muted);
+      margin-bottom: var(--space-2);
+    }
+
+    .gallery-item-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .gallery-item-era {
+      font-size: 10px;
+      padding: 2px 8px;
+    }
+
+    .gallery-item-liked {
+      position: absolute;
+      top: var(--space-3);
+      right: var(--space-3);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      background: rgba(10,10,10,0.6);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity var(--duration-fast);
+    }
+
+    .gallery-item:hover .gallery-item-liked {
+      opacity: 1;
+    }
+
+    .gallery-item-liked svg {
+      width: 14px;
+      height: 14px;
+      color: var(--color-terracotta);
+      fill: var(--color-terracotta);
+    }
+
+    /* ─── Detail Modal ─── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,10,0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: var(--z-modal);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-8);
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 900px;
+      max-height: 90vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      background: var(--color-bg-card);
+      border: var(--border-subtle);
+      box-shadow: var(--shadow-xl);
+      animation: scaleIn 0.4s var(--ease-out);
+    }
+
+    .modal-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .modal-content {
+      padding: var(--space-8);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: var(--space-4);
+      right: var(--space-4);
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      background: rgba(10,10,10,0.6);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-ivory);
+      cursor: pointer;
+      transition: all var(--duration-fast);
+      z-index: 10;
+    }
+
+    .modal-close:hover {
+      background: rgba(10,10,10,0.8);
+      transform: scale(1.05);
+    }
+
+    .modal-close svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .modal-era {
+      display: inline-flex;
+      align-self: flex-start;
+      margin-bottom: var(--space-4);
+    }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: var(--text-3xl);
+      line-height: 1.1;
+      margin-bottom: var(--space-2);
+    }
+
+    .modal-artist {
+      font-size: var(--text-base);
+      color: var(--color-ivory-muted);
+      margin-bottom: var(--space-6);
+    }
+
+    .modal-divider {
+      width: 100%;
+      height: 1px;
+      background: rgba(245, 240, 232, 0.06);
+      margin-bottom: var(--space-6);
+    }
+
+    .modal-detail {
+      display: flex;
+      justify-content: space-between;
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid rgba(245, 240, 232, 0.04);
+    }
+
+    .modal-detail-label {
+      font-size: var(--text-sm);
+      color: var(--color-ivory-dim);
+    }
+
+    .modal-detail-value {
+      font-size: var(--text-sm);
+      color: var(--color-ivory);
+      text-align: right;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: var(--space-3);
+      margin-top: auto;
+      padding-top: var(--space-6);
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 1024px) {
+      .gallery {
+        columns: 2;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .collection-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-4);
+        padding: 0 var(--space-5);
+      }
+
+      .collection-filters {
+        padding: 0 var(--space-5);
+      }
+
+      .gallery {
+        padding: 0 var(--space-5);
+        columns: 2;
+        column-gap: var(--space-3);
+      }
+
+      .modal {
+        grid-template-columns: 1fr;
+        max-height: 95vh;
+      }
+
+      .modal-image {
+        max-height: 50vh;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .gallery {
+        columns: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="index.html" class="nav-logo"><em>Artly</em></a>
+    <ul class="nav-links">
+      <li><a href="swipe.html" class="nav-link">Discover</a></li>
+      <li><a href="map.html" class="nav-link">Taste Map</a></li>
+      <li><a href="collection.html" class="nav-link active">Collection</a></li>
+      <li><a href="profile.html" class="nav-link">Profile</a></li>
+    </ul>
+  </nav>
+
+  <main class="collection-page">
+    <!-- Header -->
+    <div class="collection-header animate-fade-in-up">
+      <div class="collection-header-left">
+        <span class="text-label">Personal Gallery</span>
+        <h1 class="heading-1">Your Collection</h1>
+        <p class="collection-count"><span>12</span> artworks saved</p>
+      </div>
+      <a href="swipe.html" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Discover More
+      </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="collection-filters animate-fade-in-up delay-1">
+      <button class="filter-chip active">All</button>
+      <button class="filter-chip">Renaissance</button>
+      <button class="filter-chip">Baroque</button>
+      <button class="filter-chip">Impressionism</button>
+      <button class="filter-chip">Modern</button>
+      <button class="filter-chip">Japanese</button>
+      <button class="filter-chip">Surrealism</button>
+      <button class="filter-chip">Art Nouveau</button>
+    </div>
+
+    <!-- Gallery -->
+    <div class="gallery" id="gallery">
+      <!-- Items rendered by JS -->
+    </div>
+  </main>
+
+  <!-- Detail Modal -->
+  <div class="modal-backdrop" id="modal">
+    <button class="modal-close" onclick="closeModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+    <div class="modal">
+      <img class="modal-image" id="modalImage" src="" alt="">
+      <div class="modal-content">
+        <span class="badge badge-accent modal-era" id="modalEra"></span>
+        <h2 class="modal-title" id="modalTitle"></h2>
+        <p class="modal-artist" id="modalArtist"></p>
+        <div class="modal-divider"></div>
+        <div class="modal-detail">
+          <span class="modal-detail-label">Year</span>
+          <span class="modal-detail-value" id="modalYear"></span>
+        </div>
+        <div class="modal-detail">
+          <span class="modal-detail-label">Style</span>
+          <span class="modal-detail-value" id="modalStyle"></span>
+        </div>
+        <div class="modal-detail">
+          <span class="modal-detail-label">Museum</span>
+          <span class="modal-detail-value" id="modalMuseum"></span>
+        </div>
+        <div class="modal-detail">
+          <span class="modal-detail-label">Medium</span>
+          <span class="modal-detail-value" id="modalMedium"></span>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            Share
+          </button>
+          <button class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+            </svg>
+            View on Museum Site
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── Collection Data ───
+    const collection = [
+      {
+        title: "The Starry Night",
+        artist: "Vincent van Gogh",
+        year: "1889",
+        era: "Post-Impressionism",
+        style: "Post-Impressionism",
+        museum: "MoMA, New York",
+        medium: "Oil on canvas",
+        image: "https://images.unsplash.com/photo-1578321272176-b7bbc0679853?w=800&q=80",
+        aspect: "4/5"
+      },
+      {
+        title: "Girl with a Pearl Earring",
+        artist: "Johannes Vermeer",
+        year: "1665",
+        era: "Dutch Golden Age",
+        style: "Baroque",
+        museum: "Mauritshuis, The Hague",
+        medium: "Oil on canvas",
+        image: "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=800&q=80",
+        aspect: "3/4"
+      },
+      {
+        title: "The Great Wave",
+        artist: "Katsushika Hokusai",
+        year: "1831",
+        era: "Japanese Ukiyo-e",
+        style: "Woodblock print",
+        museum: "Metropolitan Museum of Art",
+        medium: "Color woodblock print",
+        image: "https://images.unsplash.com/photo-1578301978018-3005759f48f7?w=800&q=80",
+        aspect: "3/2"
+      },
+      {
+        title: "Water Lilies",
+        artist: "Claude Monet",
+        year: "1906",
+        era: "Impressionism",
+        style: "Impressionism",
+        museum: "Art Institute of Chicago",
+        medium: "Oil on canvas",
+        image: "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=800&q=80",
+        aspect: "1/1"
+      },
+      {
+        title: "The Birth of Venus",
+        artist: "Sandro Botticelli",
+        year: "1485",
+        era: "Renaissance",
+        style: "Early Renaissance",
+        museum: "Uffizi Gallery, Florence",
+        medium: "Tempera on canvas",
+        image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&q=80",
+        aspect: "16/9"
+      },
+      {
+        title: "The Persistence of Memory",
+        artist: "Salvador Dali",
+        year: "1931",
+        era: "Surrealism",
+        style: "Surrealism",
+        museum: "MoMA, New York",
+        medium: "Oil on canvas",
+        image: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&q=80",
+        aspect: "4/3"
+      },
+      {
+        title: "Nighthawks",
+        artist: "Edward Hopper",
+        year: "1942",
+        era: "American Realism",
+        style: "Realism",
+        museum: "Art Institute of Chicago",
+        medium: "Oil on canvas",
+        image: "https://images.unsplash.com/photo-1578926288207-a90a5366759d?w=800&q=80",
+        aspect: "16/9"
+      },
+      {
+        title: "The Kiss",
+        artist: "Gustav Klimt",
+        year: "1908",
+        era: "Art Nouveau",
+        style: "Art Nouveau",
+        museum: "Belvedere, Vienna",
+        medium: "Oil and gold leaf on canvas",
+        image: "https://images.unsplash.com/photo-1577720643272-265f09367456?w=800&q=80",
+        aspect: "3/4"
+      },
+      {
+        title: "Cafe Terrace at Night",
+        artist: "Vincent van Gogh",
+        year: "1888",
+        era: "Post-Impressionism",
+        style: "Post-Impressionism",
+        museum: "Kroller-Muller Museum",
+        medium: "Oil on canvas",
+        image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&q=80",
+        aspect: "3/4"
+      },
+      {
+        title: "The Sleeping Gypsy",
+        artist: "Henri Rousseau",
+        year: "1897",
+        era: "Naive Art",
+        style: "Post-Impressionism",
+        museum: "MoMA, New York",
+        medium: "Oil on canvas",
+        image: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=800&q=80",
+        aspect: "16/9"
+      },
+      {
+        title: "A Sunday on La Grande Jatte",
+        artist: "Georges Seurat",
+        year: "1886",
+        era: "Post-Impressionism",
+        style: "Pointillism",
+        museum: "Art Institute of Chicago",
+        medium: "Oil on canvas",
+        image: "https://images.unsplash.com/photo-1578321272176-b7bbc0679853?w=600&q=80",
+        aspect: "2/1"
+      },
+      {
+        title: "The Milkmaid",
+        artist: "Johannes Vermeer",
+        year: "1658",
+        era: "Dutch Golden Age",
+        style: "Baroque",
+        museum: "Rijksmuseum, Amsterdam",
+        medium: "Oil on canvas",
+        image: "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=600&q=80",
+        aspect: "3/4"
+      }
+    ];
+
+    // ─── Render Gallery ───
+    function renderGallery() {
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = collection.map((artwork, i) => `
+        <div class="gallery-item animate-fade-in-up delay-${Math.min(i + 1, 8)}" onclick="openModal(${i})" style="aspect-ratio: ${artwork.aspect};">
+          <img src="${artwork.image}" alt="${artwork.title}" loading="lazy">
+          <div class="gallery-item-overlay">
+            <span class="badge badge-accent gallery-item-era">${artwork.era}</span>
+            <h3 class="gallery-item-title">${artwork.title}</h3>
+            <p class="gallery-item-artist">${artwork.artist}, ${artwork.year}</p>
+          </div>
+          <div class="gallery-item-liked">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+            </svg>
+          </div>
+        </div>
+      `).join('');
+
+      // Re-observe for animations
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.style.animationPlayState = 'running';
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.gallery-item').forEach(el => {
+        el.style.animationPlayState = 'paused';
+        observer.observe(el);
+      });
+    }
+
+    // ─── Modal ───
+    function openModal(index) {
+      const artwork = collection[index];
+      document.getElementById('modalImage').src = artwork.image;
+      document.getElementById('modalImage').alt = artwork.title;
+      document.getElementById('modalEra').textContent = artwork.era;
+      document.getElementById('modalTitle').textContent = artwork.title;
+      document.getElementById('modalArtist').textContent = `${artwork.artist}, ${artwork.year}`;
+      document.getElementById('modalYear').textContent = artwork.year;
+      document.getElementById('modalStyle').textContent = artwork.style;
+      document.getElementById('modalMuseum').textContent = artwork.museum;
+      document.getElementById('modalMedium').textContent = artwork.medium;
+      document.getElementById('modal').classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    // Close on backdrop click
+    document.getElementById('modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('modal')) closeModal();
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // ─── Filter chips ───
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      });
+    });
+
+    // Init
+    renderGallery();
+  </script>
+</body>
+</html>
